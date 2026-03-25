@@ -7,6 +7,8 @@ import ArrowTopRightOnSquareIcon from "@heroicons/react/24/outline/ArrowTopRight
 import { Box, ButtonBase, Collapse, SvgIcon, Stack } from "@mui/material";
 import BookmarkBorderIcon from "@mui/icons-material/BookmarkBorder";
 import BookmarkIcon from "@mui/icons-material/Bookmark";
+import LanguageIcon from "@mui/icons-material/Language";
+import { useUserBookmarks } from "../hooks/use-user-bookmarks";
 import { useSettings } from "../hooks/use-settings";
 
 export const SideNavItem = (props) => {
@@ -19,12 +21,17 @@ export const SideNavItem = (props) => {
     icon,
     openImmediately = false,
     path,
+    scope,
     title,
   } = props;
 
+  const isGlobal = scope === "global";
+
   const [open, setOpen] = useState(openImmediately);
   const [hovered, setHovered] = useState(false);
-  const { handleUpdate, bookmarks = [], compactNav = false } = useSettings();
+  const { bookmarks, setBookmarks } = useUserBookmarks();
+  const settings = useSettings();
+  const compactNav = settings.compactNav ?? false;
   const isBookmarked = bookmarks.some((bookmark) => bookmark.path === path);
 
   const handleToggle = useCallback(() => {
@@ -34,13 +41,15 @@ export const SideNavItem = (props) => {
   const handleBookmarkToggle = useCallback(
     (event) => {
       event.stopPropagation();
-      handleUpdate({
-        bookmarks: isBookmarked
+      setBookmarks(
+        isBookmarked
           ? bookmarks.filter((bookmark) => bookmark.path !== path)
-          : bookmarks.length >= 50 ? bookmarks : [...bookmarks, { label: title, path }],
-      });
+          : bookmarks.length >= 50
+            ? bookmarks
+            : [...bookmarks, { label: title, path }]
+      );
     },
-    [isBookmarked, bookmarks, handleUpdate, path, title]
+    [isBookmarked, bookmarks, setBookmarks, path, title]
   );
 
   // Dynamic spacing and font sizing based on depth
@@ -210,6 +219,24 @@ export const SideNavItem = (props) => {
           >
             {title}
           </Box>
+          {isGlobal && (
+            <Box
+              component="span"
+              title="Global - not tied to selected tenant"
+              sx={{
+                display: "inline-flex",
+                alignItems: "center",
+                flexShrink: 0,
+                ml: 0.5,
+                transition: "opacity 250ms ease-in-out",
+                ...(collapse && { opacity: 0 }),
+              }}
+            >
+              <SvgIcon sx={{ color: "neutral.400", fontSize: 14 }}>
+                <LanguageIcon />
+              </SvgIcon>
+            </Box>
+          )}
           {external && (
             <SvgIcon
               sx={{
@@ -252,5 +279,6 @@ SideNavItem.propTypes = {
   icon: PropTypes.any,
   openImmediately: PropTypes.bool,
   path: PropTypes.string,
+  scope: PropTypes.string,
   title: PropTypes.string.isRequired,
 };
